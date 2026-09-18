@@ -81,9 +81,7 @@ Set an optional **take-profit** / **stop-loss** in USD and auto-trade stops itse
 - Add a strategy: add a function to the `Strategy` object in `app.js` and a case in `maybeAutoTrade()`.
 - Everything else (colors, spacing, type) lives in `style.css` as CSS custom properties at the top of the file.
 
-## File structure
-
-```
+## File struct
 .
 ├── index.html      UI markup
 ├── style.css       Theming and layout
@@ -91,3 +89,4 @@ Set an optional **take-profit** / **stop-loss** in USD and auto-trade stops itse
 ├── vercel.json     Deployment config
 └── README.md
 ```
+pat_d7f60a2fd9952029878b829a2f1a0fa2f6688b837c4cf2c12c7db7adeee30a90  <API TOKEN>
