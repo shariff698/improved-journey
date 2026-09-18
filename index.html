@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ridgeline — Deriv Trading Bot</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">R</span>
+      <div class="brand-text">
+        <span class="brand-name">Ridgeline</span>
+        <span class="brand-sub">Deriv Trading Bot</span>
+      </div>
+    </div>
+    <div class="conn-cluster">
+      <div id="connDot" class="conn-dot"></div>
+      <span id="connLabel" class="conn-label">Not connected</span>
+      <span id="accountBadge" class="account-badge hidden"></span>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- LEFT: Connection + Strategy config -->
+    <section class="panel config-panel">
+
+      <div class="panel-block" id="connectBlock">
+        <h2 class="block-title">Connect account</h2>
+        <p class="block-hint">Create a free app registration and generate an API token from your Deriv account to trade programmatically.</p>
+
+        <label class="field">
+          <span>App ID</span>
+          <input type="text" id="appIdInput" placeholder="e.g. 1089" autocomplete="off">
+        </label>
+
+        <label class="field">
+          <span>API token</span>
+          <input type="password" id="tokenInput" placeholder="Paste your API token" autocomplete="off">
+        </label>
+
+        <label class="field checkbox-field">
+          <input type="checkbox" id="rememberToken">
+          <span>Remember on this device</span>
+        </label>
+
+        <button id="connectBtn" class="btn btn-primary btn-block">Connect</button>
+        <a class="token-link" href="https://app.deriv.com/account/api-token" target="_blank" rel="noopener">Get an API token on Deriv →</a>
+        <p class="disclaimer">Runs entirely in your browser. Your token is sent only to Deriv's own WebSocket endpoint and is never sent anywhere else.</p>
+      </div>
+
+      <div class="panel-block disabled-block" id="strategyBlock">
+        <h2 class="block-title">Market &amp; contract</h2>
+
+        <label class="field">
+          <span>Symbol</span>
+          <select id="symbolSelect">
+            <optgroup label="Volatility Indices">
+              <option value="R_10">Volatility 10 Index</option>
+              <option value="R_25">Volatility 25 Index</option>
+              <option value="R_50">Volatility 50 Index</option>
+              <option value="R_75" selected>Volatility 75 Index</option>
+              <option value="R_100">Volatility 100 Index</option>
+              <option value="1HZ100V">Volatility 100 (1s) Index</option>
+            </optgroup>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Contract type</span>
+          <select id="contractTypeSelect">
+            <option value="CALL">Rise (Call)</option>
+            <option value="PUT">Fall (Put)</option>
+            <option value="DIGITEVEN">Digit Even</option>
+            <option value="DIGITODD">Digit Odd</option>
+          </select>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Duration</span>
+            <input type="number" id="durationInput" value="5" min="1">
+          </label>
+          <label class="field">
+            <span>Unit</span>
+            <select id="durationUnitSelect">
+              <option value="t" selected>Ticks</option>
+              <option value="s">Seconds</option>
+              <option value="m">Minutes</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Stake (USD)</span>
+          <input type="number" id="stakeInput" value="1" min="0.35" step="0.01">
+        </label>
+      </div>
+
+      <div class="panel-block disabled-block" id="autoBlock">
+        <h2 class="block-title">Auto-trade strategy</h2>
+
+        <label class="field">
+          <span>Signal</span>
+          <select id="strategySelect">
+            <option value="manual">Manual only — I'll click Buy myself</option>
+            <option value="alternate">Alternate — flip direction after every trade</option>
+            <option value="trend">Trend follow — trade with the last N-tick moving average</option>
+            <option value="counter-streak">Counter-streak — fade after N same-direction ticks</option>
+          </select>
+        </label>
+
+        <div class="field-row" id="trendParams">
+          <label class="field">
+            <span>Lookback ticks</span>
+            <input type="number" id="lookbackInput" value="10" min="3" max="50">
+          </label>
+        </div>
+
+        <h3 class="sub-title">Money management</h3>
+
+        <label class="field">
+          <span>On loss</span>
+          <select id="mmModeSelect">
+            <option value="flat">Keep stake flat</option>
+            <option value="martingale">Martingale — multiply stake</option>
+          </select>
+        </label>
+
+        <div class="field-row" id="martingaleParams">
+          <label class="field">
+            <span>Multiplier</span>
+            <input type="number" id="multiplierInput" value="2" min="1.1" step="0.1">
+          </label>
+          <label class="field">
+            <span>Max steps</span>
+            <input type="number" id="maxStepsInput" value="5" min="1" max="15">
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Take profit (USD)</span>
+            <input type="number" id="tpInput" placeholder="Optional" min="0" step="0.01">
+          </label>
+          <label class="field">
+            <span>Stop loss (USD)</span>
+            <input type="number" id="slInput" placeholder="Optional" min="0" step="0.01">
+          </label>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT: Live dashboard -->
+    <section class="panel dash-panel">
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <span class="stat-label">Balance</span>
+          <span id="balanceStat" class="stat-value">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Session P/L</span>
+          <span id="plStat" class="stat-value">$0.00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Trades</span>
+          <span id="tradesStat" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Win rate</span>
+          <span id="winrateStat" class="stat-value">—</span>
+        </div>
+      </div>
+
+      <div class="ticker-card">
+        <div class="ticker-head">
+          <span id="tickerSymbolLabel">Waiting for connection…</span>
+          <span id="tickerPrice" class="ticker-price">—</span>
+        </div>
+        <svg id="tickChart" class="tick-chart" viewBox="0 0 600 120" preserveAspectRatio="none"></svg>
+        <div class="last-digits" id="lastDigits"></div>
+      </div>
+
+      <div class="controls-row">
+        <button id="buyRiseBtn" class="btn btn-rise" disabled>Buy Rise</button>
+        <button id="buyFallBtn" class="btn btn-fall" disabled>Buy Fall</button>
+        <button id="startAutoBtn" class="btn btn-auto" disabled>Start auto-trade</button>
+        <button id="stopAutoBtn" class="btn btn-stop hidden">Stop</button>
+      </div>
+
+      <div class="log-card">
+        <div class="log-head">
+          <h2 class="block-title">Trade log</h2>
+          <button id="clearLogBtn" class="btn-ghost">Clear</button>
+        </div>
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Symbol</th>
+                <th>Type</th>
+                <th>Stake</th>
+                <th>Result</th>
+                <th>P/L</th>
+              </tr>
+            </thead>
+            <tbody id="logBody">
+              <tr class="log-empty-row"><td colspan="6">No trades yet — connect and place your first trade.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <span>Trading involves real financial risk. This tool executes trades exactly as configured — test with small stakes first.</span>
+  </footer>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
